@@ -1,0 +1,17 @@
+User-defined functions
+
+Read script, especially at start-up
+
+Format results more elegantly, and in a configurable way
+
+Error checks for math functions are probably incomplete, and
+need filling out.
+
+Display results in other bases, e.g., hex
+
+Provide line editor history
+
+Add other line editing functions (end of line, kill line, etc)
+
+check ctrl-c in line editor
+

@@ -1,0 +1,12 @@
+cc compat.c  
+cc funcs.c  
+cc kcalc.c  
+cc term.c  
+cc tinyexpr.c
+as compat.asm  
+as funcs.asm  
+as kcalc.asm  
+as term.asm  
+as tinyexpr.asm
+ln kcalc.o tinyexpr.o funcs.o compat.o term.o m.lib c.lib
+
