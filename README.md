@@ -1,4 +1,4 @@
-#KCalc CPM
+# KCalc CPM
 
 Version 0.1b, January 2022 
 
