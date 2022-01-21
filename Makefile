@@ -1,42 +1,44 @@
 # This is the Makefile for building KCalc-CPM in my emulation environment.
 # To build on CP/M, use kcalc.sub (and have patience).
 
+# To use:
+#   make prepare -- unpacks the necessary parts of the Aztec compiler
+#   make, make clean -- work as usual
+#   make unprepare -- delete the Aztec bits
+
+# Set the path to the CPM emulator. 
+# Obtain it from here: https://github.com/jhallen/cpm
 CPM=cpm
+
+# Set the path to the zipfile containing Aztec C 1.06d. Get this
+# from https://www.aztecmuseum.ca/compilers.htm#cpm
+AZTECZIP=~/Downloads/az80106d.zip
+
+SOURCES := $(shell find . -type f -name "*.c")
+OBJECTS := $(patsubst %,%,$(SOURCES:.c=.o))
 
 all: kcalc.com
 
-kcalc.asm: kcalc.c tinyexpr.h term.h funcs.h config.h
-	$(CPM) cc kcalc.c
+prepare:
+	unzip -joq $(AZTECZIP) AZ80106D/BIN80/AS.COM
+	unzip -joq $(AZTECZIP) AZ80106D/BIN80/CC.COM
+	unzip -joq $(AZTECZIP) AZ80106D/BIN80/CC.MSG
+	unzip -joq $(AZTECZIP) AZ80106D/BIN80/LN.COM
+	unzip -joq $(AZTECZIP) AZ80106D/LIB/M.LIB
+	unzip -joq $(AZTECZIP) AZ80106D/LIB/C.LIB
+	unzip -joq $(AZTECZIP) AZ80106D/INCLUDE/*.H
 
-tinyexpr.asm: tinyexpr.c tinyexpr.h config.h
-	$(CPM) cc tinyexpr.c
+%.o: %.c *.h
+	$(CPM) cc -DCPM $<
+	$(CPM) as $(basename $<)
 
-funcs.asm: funcs.c funcs.h config.h
-	$(CPM) cc funcs.c
-
-compat.asm: compat.c compat.h config.h
-	$(CPM) cc compat.c
-
-term.asm: term.c term.h config.h
-	$(CPM) cc term.c
-
-kcalc.o: kcalc.asm
-	$(CPM) as kcalc.asm
-
-tinyexpr.o: tinyexpr.asm
-	$(CPM) as tinyexpr.asm
-
-funcs.o: funcs.asm
-	$(CPM) as funcs.asm
-
-compat.o: compat.asm
-	$(CPM) as compat.asm
-
-term.o: term.asm
-	$(CPM) as term.asm
-
-kcalc.com: kcalc.o tinyexpr.o funcs.o compat.o term.o
-	$(CPM) ln kcalc.o tinyexpr.o funcs.o compat.o term.o m.lib c.lib 
+kcalc.com: $(OBJECTS) 
+	$(CPM) ln -o kcalc.com *.o m.lib c.lib 
 
 clean:
-	rm -f kcalc.com *.asm *.o
+	rm -f kcalc.com *.asm *.o CC.MSG *.deps
+
+unprepare:
+	rm -f AS.COM LN.COM CC.COM *.LIB *.H
+
+

@@ -15,6 +15,8 @@
 #include "term.h"
 #include "config.h"
 
+#ifdef CPM
+
 /*===========================================================================
 
   term_get_rchar
@@ -104,7 +106,7 @@ int len;
         if (pos > 0)
 	  {
           int i, l;
-	  memmove (line + pos - 1, line + pos, len - pos - 0);
+	  _memmove (line + pos - 1, line + pos, len - pos - 0);
 	  pos--;
 	  putchar (O_BS); 
           l = strlen (line);
@@ -195,7 +197,7 @@ int len;
 	  {
           int i, l;
           char *p;
-	  memmove (line + pos + 1, line + pos, len - pos - 1);
+	  _memmove (line + pos + 1, line + pos, len - pos - 1);
           line[pos] = c;
           printf ("%s", line + pos);
           l = strlen (line + pos);
@@ -208,4 +210,14 @@ int len;
   return 0;
   }
 
+#endif
+
+#ifdef LINUX
+
+int term_g_line (char *line, int len)
+  {
+  return fgets (line, len, stdin) == NULL;
+  }
+
+#endif
 

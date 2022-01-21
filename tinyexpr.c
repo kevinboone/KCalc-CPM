@@ -27,6 +27,12 @@
 #include "setjmp.h"
 #include "tinyexpr.h"
 #include "compat.h"
+#include "strutil.h"
+#ifdef LINUX
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#endif
 
 #ifndef NAN
 /* KB - The CP/M math library has no notion of "NaN", so use HUGE instead. */
@@ -108,10 +114,12 @@ double b;
 static double comma (a, b) double a; double b; {(void)a; return b;}
 
 /** KB -- implement missing fmod */
+#ifdef CPM
 static double fmod (a, b) double a; double b; 
   {
   return a - (trunc (a/b) * b);
   }
+#endif 
 
 static double negate (a) double a; {return -a;}
 
@@ -307,10 +315,10 @@ te_expr *parameters[];
   int psize = sizeof(void*) * arity;
   int size = (sizeof(te_expr) - sizeof(void*)) + psize + (IS_CLOSURE (type) ? sizeof(void*) : 0);
   te_expr *ret = malloc(size);
-  memset(ret, 0, size);
+  _memset(ret, 0, size);
   if (arity && parameters) 
     {
-    memcpy (ret->parameters, parameters, psize);
+    _memcpy (ret->parameters, parameters, psize);
     }
   ret->type = type;
   ret->bound = 0;

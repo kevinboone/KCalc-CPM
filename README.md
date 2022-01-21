@@ -1,6 +1,6 @@
 #KCalc CPM
 
-Version 0.1a, May 2021
+Version 0.1b, January 2022 
 
 ## What is this?
 
@@ -35,7 +35,12 @@ KCalc-CPM supports decimal and hexadecimal entry and display.
 
 KCalc-CPM is written in an archaic form of the C programming
 language, and can be compiled on a CPM machine, if you have the
-patience.
+patience. The source code provides Makefiles for building CP/M on
+Linux (using a CP/M emulator) and for building native Linux code.
+It's important, I think, to be able to build for native Linux, because
+(a) the compiler is much more fussy and will spot more errors and
+(b) we can use modern tools like `valgrind` to check the proper operation
+of the program.
 
 ## Installation
 
@@ -49,6 +54,8 @@ CP/M automatically searches. You can enter an expression directly
 on the command line; if you don't, the program will enter interactive
 mode. To leave interactive mode, enter "quit", or just hit 
 ctrl+C.
+
+Enter `help` at the prompt for more information.
 
 ## Line editor
 
@@ -67,6 +74,11 @@ likely to be used.
 
 Results are displayed in decimal or hexadecimal: use `dec` or
 `hex` at the prompt to select which is used.
+
+Use the `sigfig` command with a single digit (`sigfig 8`) to set the
+precision of the output. Although the Aztec floating point library provides
+about fourteen digits of precision, `KCalc-CPM` currently only 
+displays one to nine digits, with five being the default.
 
 ## Variables
 
@@ -114,22 +126,40 @@ function -- just do "10^x".
 KCalc-CPM uses about 40kB of RAM -- 36kB for the program, and the rest
 for its working storage.
 
-## Building on a CP/M machine
+## Building for CP/M on Linux
 
-KCalc-CPM is designed to be capable of being built under CP/M, using the
-Aztec C compiler. The CP/M version of Aztec can be obtained here
+The build system is designed to be used with Parag Patel's Z80 emulator,
+a CP/M-ready version of which is available here:
+
+https://github.com/jhallen/cpm
+
+The CP/M version of the Aztec C compiler can be obtained here:
 
 https://www.aztecmuseum.ca/compilers.htm#cpm 
 
-It's free of charge but not, so far as I know, open source. It's
-easiest to build if the C compiler files and the source for
+It's free of charge but not, so far as I know, open source. 
+Only version 1.6d is known to work. Download this version and edit the
+Makefile to indicate the location of the zipfile. Run `make prepare`
+to unpack the necessary parts out of the zipfile. Note that
+CP/M compatibility requires that every file be in the same directory
+(the same disk on a real CP/M machine). There's no point trying to
+organize the source more elegantly than I have, because that will just
+make it harder to use on a real CP/M machine.
+
+Just run `make` to create `kcalc.com`.
+
+## Building for native Linux
+
+Just run `make -f Makefile.linux` to create `kcalc`. Note that this is
+not intended to be a practical Linux utility -- the purpose of building
+for Linux is for unit testing.
+
+## Building on a CP/M machine
+
+It's easiest to build if the C compiler files and the source for
 KCalc-CPM are on the same disk. In that case, you can just 
 `submit` the file `kcalc.sub`. But be patient -- it will take ten
 minutes or so on the Z80 Playground. 
-
-I build KCalc-CPM using a Linux emulation set-up, because life is
-short. It isn't documented here, but I'd be happy to describe it, 
-if anybody is interested.
 
 ## Limitations
 
@@ -208,4 +238,8 @@ Aztec C compiler.  I presume that permission has been given to distribute the
 library in binary format as part of the general permission to distribute the
 software.  
 
+## Version history
+
+0.1a | May 2021 | First working version
+0.1b | Jan 2022 | Build system completely rewritten; number formatting improved
 

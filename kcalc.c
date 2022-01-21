@@ -18,9 +18,19 @@
 #include "funcs.h"
 #include "term.h"
 #include "config.h"
+#include "compat.h"
+#ifdef LINUX
+#include <string.h>
+#include <stdlib.h>
+#endif
 
-#define BANNER1 "kcalc-cpm version 0.1a, May 2021.\r\n"
+#define BANNER1 "kcalc-cpm version 0.1b, January 2022.\r\n"
 #define BANNER2 "Enter \"help\" for instructions, \"quit\" to exit.\r\n"
+
+/* The largest number of characters that are required to render a number
+ * in full precision. Aztec C gives about 9 digits; modern compilers much
+ * more. */
+#define MAX_NUM_STR 20
 
 /** The main symbol table */
 #define SYMTAB_MAX 30
@@ -32,6 +42,9 @@ int nsyms = 0;
 double ans = 0; /* Last answer */
 
 void kc_set_num (); /* Fwd ref */
+
+int sigfig = 5; /* Precision of output */
+char fmt[7]; /* sprintf() format string to give this precision */
 
 /*===========================================================================
 
@@ -108,6 +121,8 @@ void kc_status ()
     printf ("Output base is decimal. use HEX to set it to hexadecimal.\r\n");
   else
     printf ("Output base is hexadecimal. use DEC to set it to decimal.\r\n");
+  printf ("Output precision is %d digits -- use SIGFIG n to change it.\r\n", 
+    sigfig);
   }
 
 /*===========================================================================
@@ -180,6 +195,7 @@ void kc_do_list ()
   printf ("KEYS\r\n");
   printf ("QUIT\r\n");
   printf ("RAD\r\n");
+  printf ("SIGFIG n\r\n");
   }
 
 /*===========================================================================
@@ -225,6 +241,26 @@ char *line;
     {
     base_mode = BM_HEX; return 1;
     }
+  else if (strncmp (line, "SIGFIG", 6) == 0)
+    {
+    if (strlen (line) >= 8)
+      {
+      int s = line[7] - '0';
+      if (s >= 1 && s <= 9)
+        {
+        sigfig = s;
+        }
+      else
+        {
+        fprintf (stderr, "sigfig must be in range 1-9\n");
+        }
+      }
+    else
+      {
+      fprintf (stderr, "Usage: \"sigfig N\", where n is 1 to 9\n");
+      }
+    return 1;
+    }
   /* Return 0 if we didn't recongize the line as a command. We don't 
      return any error code from this function, because there aren't any
      errors that can be raised. */
@@ -246,7 +282,7 @@ te_variable *vars[];
 int nvars;
 int *error;
   {
-  double ret = HUGE;
+  double ret = 0; /* TODO */
   double result;
   int error_pos = 0;
   int rt_error = 0;
@@ -264,7 +300,7 @@ int *error;
     printf ("%s ", kc_strerror (rt_error));
     if (error_pos > 0)
       {
-      if (error_pos >= strlen (expr))
+      if (error_pos >= (int)strlen (expr))
 	printf ("at end of line"); 
       else
 	printf ("at position %d", error_pos); /* TODO -- nicer message */
@@ -308,7 +344,7 @@ char *line;
 te_variable *vars[];
 int nvars;
   {
-  char *eqp = strchr (line, '=');
+  char *eqp = _strchr (line, '=');
   if (eqp)
     {
     /* We are modifying the caller's string here. Check whether that's OK */
@@ -351,6 +387,56 @@ int nvars;
 
 /*===========================================================================
 
+  kc_strz
+
+  Strip trailing zero from a string representation of a number, bearing
+  in mind that there might be an exponent. This is more complicated than
+  it should be. This is only necessary because the Aztec "printf" produces
+  ugly output. It relies on printf working in a particular way, as well.
+
+===========================================================================*/
+void kc_strz (str)
+char *str;
+  {
+  int i, l;
+
+  char s_e[MAX_NUM_STR];
+  /* TODO find "e" */
+  char *e_pos = _strchr (str, 'e');
+  if (e_pos)
+    {
+    /* Copy the 'e' part to a buffer, then remove it from the
+       main string. */
+    strcpy (s_e, e_pos);
+    *e_pos = 0;
+    }
+
+  /* Don't strip trailing zeros unless they're after a decimal point. */
+  if (_strchr (str, '.'))
+    {
+    l = strlen (str);
+    for (i = l - 1; i > 0; i--)
+      {
+      if (str[i] == '0') 
+	str[i] = 0;
+      else
+	{
+	/* Remove '.' if it is the end of the number. */
+	if (str[i] == '.') str[i] = 0;
+	break;
+	}
+      }
+    }
+  if (e_pos)
+    {
+    /* If there was an 'e' part, and we removed it, put it back. */
+    strcat (str, s_e);
+    }
+  }
+
+
+/*===========================================================================
+
   kc_fmt
 
   Format a number for display
@@ -359,18 +445,31 @@ int nvars;
 void kc_fmt (num)
 double num;
   {
-  /* TODO */
-  if (base_mode == BM_HEX)
+  if (num == 0) 
     {
+    printf ("0\n");
+    }
+  else
+    { 
     if (num < 0)
       {
       printf ("-");
       num = -num;
       }
-    printf ("#%lx\n", (long)num);
+    if (base_mode == BM_HEX)
+      {
+      printf ("#%lx\n", (long)num);
+      }
+    else
+      {
+      char s_m[MAX_NUM_STR];
+      fmt[1] = sigfig + '0';
+      fmt[3] = sigfig + '0'; 
+      sprintf (s_m, fmt, num);
+      kc_strz (s_m);
+      printf ("%s\n", s_m);
+      }
     }
-  else
-    printf ("%.9lg\n", num);
   }
 
 /*===========================================================================
@@ -422,7 +521,7 @@ void kc_do_repl ()
     {
     printf ("kcalc> ");
     fflush (stdout);
-    if (term_g_ln (line, sizeof (line) - 1) == 0)
+    if (term_g_line (line, sizeof (line) - 1) == 0)
       {
       kc_toupper (line);
       if (strncmp (line, "QUIT", 4) == 0) done = 1;
@@ -454,7 +553,7 @@ double value;
   {
   int i = nsyms;
   if (i >= SYMTAB_MAX - 1) return E_MSYMS;
-  symtab[i].name = strdup (name);
+  symtab[i].name = _strdup (name);
   symtab[i].type = TE_VARIABLE;
   symtab[i].num = value;
   symtab[i].address = &(symtab[i].num);
@@ -477,7 +576,7 @@ char *name;
 void *address;
   {
   int i = nsyms;
-  symtab[i].name = strdup (name);
+  symtab[i].name = _strdup (name);
   symtab[i].type = TE_VARIABLE;
   symtab[i].address = address;
   nsyms++;
@@ -498,7 +597,7 @@ char *name;
 void *address;
   {
   int i = nsyms;
-  symtab[i].name = strdup (name);
+  symtab[i].name = _strdup (name);
   symtab[i].type = TE_FUNC1 | TE_FLAG_PURE;
   symtab[i].address = address;
   /** TODO check overflow */
@@ -519,7 +618,7 @@ char *name;
 void *address;
   {
   int i = nsyms;
-  symtab[i].name = strdup (name);
+  symtab[i].name = _strdup (name);
   symtab[i].type = TE_FUNC2 | TE_FLAG_PURE;
   symtab[i].address = address;
   /** TODO check overflow */
@@ -574,8 +673,7 @@ void kc_clear_syms ()
   Find a free variable slot in the symtab, if there is one
 
 ===========================================================================*/
-te_variable *kc_empty_var (name)
-char *name;
+te_variable *kc_empty_var ()
   {
   int i;
   for (i = 0; i < nsyms; i++)
@@ -611,7 +709,7 @@ double value;
     te_variable *te = kc_empty_var (name);
     if (te)
       {
-      te->name = strdup (name);
+      te->name = _strdup (name);
       te->type = TE_VARIABLE;
       te->address = &(te->num);
       te->num = value;
@@ -634,7 +732,6 @@ int main (argc, argv)
 int argc;
 char **argv;
   {
-  te_variable *dummy;
   int i;
   char line [128];
   kc_add_num ("PI", CONST_PI);
@@ -660,14 +757,20 @@ char **argv;
   kc_add_1func ("TAN", _tan); 
   kc_add_1func ("TANH", tanh); 
 
+  sprintf (fmt, "%%5.5g");
+
   line [0] = 0;
   for (i = 1; i < argc; i++)
     {
     char *arg = argv[i];
     int l = strlen (arg);
     int ll = strlen (line);
-    if (ll + l + 2 < sizeof (line))
+    if (ll + l + 2 < (int)sizeof (line))
       {
+#ifndef CPM
+      _strupr (arg);
+      /* CP/M always provides ags in upper case */
+#endif
       strcat (line, arg);
       strcat (line, " ");
       }

@@ -1,0 +1,28 @@
+# This is the Makefile for building KCalc-CPM on Linux.
+
+CC   := gcc
+DEPS := $(OBJECTS:.o=.deps)
+
+SOURCES := $(shell find . -type f -name "*.c")
+OBJECTS := $(patsubst %,%,$(SOURCES:.c=.o))
+
+CFLAGS  := -Wall -Wextra
+
+all: kcalc
+
+%.o: %.c
+	$(CC) $(CFLAGS) -DLINUX -MD -MF $(@:.o=.deps) -o $@ -c $<
+
+kcalc: $(OBJECTS)
+	$(CC) -o kcalc *.o -lm 
+
+clean:
+	rm -f kcalc *.o *.deps
+
+-include $(DEPS)
+
+unprepare:
+	rm -f kcalc 
+
+.PHONY: clean
+
