@@ -1,0 +1,96 @@
+kcalc -- a scientific calculator for CP/M
+=========================================
+
+kcalc is a scientific calculator utility for the CP/M 2.2 platform. It can
+evaluate expressions from the command line, but it also has  an interactive
+mode with rudimentary, WordStar-like line editing.
+
+The floating point math library the program uses provides about 11-12
+signigicant figures of precision, and results are displayed to nine figures.
+
+kcalc follows proper arithmetic rules of precence; brackets can be used
+to group terms in the conventional way.
+
+A number of logarithmic and trig functions are provided -- type "list" at the
+prompt to see them all.
+
+
+Example
+-------
+
+    A> kcalc sin (pi/4)
+    0.70710678     
+
+Results are displayed in decimal or hexadecimal: use "dec" or "hex" at the
+prompt to select which is used.
+
+Numbers
+-------
+
+Numbers are assumed to be decimal, unless they are preceded by '#' to denote
+a hexadecimal number.  Decimal numbers can be entered in scientific notation
+(e.g., `1.2E10`).  To enter a negative hex number, put the minus sign first:
+`-#20`. Hexadecimal numbers can't be fractional, or use scientific notation. 
+
+Operators
+---------
+
+The usual math operators are supported; to calculate a power use `^`, e.g.,
+`2^16`. The modulus (remainder) operator is `%`, e.g., `7%3`.
+
+Enter `help` at the prompt for more information.
+
+Interactive mode
+----------------
+
+kcalc enters interactive mode if invoked without an expression on the command
+line.  It supports basic line editing, with WordStar-like key bindings.  To
+get a list of key assignments, type "keys" at the prompt. 
+
+To leave interactive mode, enter "quit", or just hit ctrl+C.
+
+Use the `sigfig` command with a single digit (`sigfig 8`) to set the
+precision of the output. Although the Aztec floating point library provides
+about fourteen digits of precision, `KCalc-CPM` currently only 
+displays one to nine digits, with five being the default.
+
+Variables
+---------
+
+You can define up to ten new variables like this:
+
+    kcalc> twopi = 2 * pi
+
+Variables can freely be used in later expressions. 
+
+
+Notes
+-----
+
+All function and variable names are case-insensitive.
+
+All angles are in radians by default; to use degrees type "deg" at the
+prompt. 
+
+"ans" is a built-in variable that denotes the last result calculated.
+
+The "log" function is the _natural_ (base-e) logarithm -- use "log10" for
+common (base-10) logarith. The "exp" function is the base-e antilogarithm,
+that is, e to the power x. There is no common antilogarithm function -- just
+do "10^x".
+
+The maximum line length in the editor is 127 characters
+
+There is, at present, no way to define new functions, or to read definitions
+from a file, or to log results to a file.
+
+kcalc can only display hexadecimal numbers up to #FFFFFFFF.  Attempting to
+display a number larger than this in HEX mode will lead to odd, completely
+bogus, results.
+
+Author
+------
+kcalc is maintained by Kevin Boone, and is distributed under the terms of the
+GNU public licence, v3.0.
+
+
